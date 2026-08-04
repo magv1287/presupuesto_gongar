@@ -3,45 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presupuesto Familiar GonGar</title>
+    <title>Presupuesto Familiar GonGar - Resumen 360°</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-12">
 
-    <!-- Header -->
+    <!-- Header Navigation -->
     <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 font-bold text-slate-950 text-lg">
                     G
                 </div>
                 <div>
-                    <h1 class="font-bold text-base sm:text-lg leading-tight tracking-tight text-white">Presupuesto Familiar <span class="text-emerald-400">GonGar</span></h1>
-                    <p class="text-xs text-slate-400">Persistencia local & Cierre mensual</p>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight text-white">Presupuesto <span class="text-emerald-400">GonGar</span></h1>
                 </div>
             </div>
 
-            <!-- Download Backup Button -->
-            <a href="/api/download-backup" download
-               class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1">
-                <span>💾 Backup JSON</span>
-            </a>
+            <div class="flex items-center space-x-2">
+                <a href="/" class="text-xs font-bold px-3.5 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    📊 Resumen
+                </a>
+                <a href="/settings" class="text-xs font-semibold px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    ⚙️ Settings
+                </a>
+                <a href="/api/download-backup" download class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition hidden sm:inline-block">
+                    💾 Backup
+                </a>
+            </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+    <main class="max-w-5xl mx-auto px-4 mt-6 space-y-6">
 
-        <!-- Month Filter Selector & Closure Badge -->
+        <!-- Selector de Mes & Estado -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center space-x-2 w-full sm:w-auto">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mes Visualizado:</span>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mes:</span>
                 <select id="monthSelect" onchange="changeMonth(this.value)"
-                    class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-emerald-400 focus:outline-none focus:border-emerald-500">
+                    class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-emerald-400 focus:outline-none">
                     {% for m in available_months %}
                         <option value="{{ m }}" {% if m == active_month %}selected{% endif %}>
                             {{ m }} {% if m == active_month %}(Actual){% endif %}
@@ -51,106 +56,166 @@
             </div>
 
             {% if is_closed %}
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center space-x-1">
-                <span>🔒 Mes Cerrado & Archivados en Backup</span>
+            <span class="text-xs font-medium px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                🔒 Mes Cerrado & Archivado
             </span>
             {% else %}
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center space-x-1">
-                <span>🟢 Mes En Curso</span>
+            <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                🟢 Mes En Curso
             </span>
             {% endif %}
         </div>
 
-        <!-- KPI Summary Cards for Active Month -->
-        <div class="grid grid-cols-3 gap-3 sm:gap-4">
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingresos ({{ active_month }})</p>
-                <p class="text-lg sm:text-2xl font-extrabold text-emerald-400 mt-1.5">${{ "{:,.2f}".format(total_ingresos) }}</p>
-            </div>
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gastos ({{ active_month }})</p>
-                <p class="text-lg sm:text-2xl font-extrabold text-rose-400 mt-1.5">${{ "{:,.2f}".format(total_gastos) }}</p>
-            </div>
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Balance Neto</p>
-                <p class="text-lg sm:text-2xl font-extrabold {% if balance_neto >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %} mt-1.5">
-                    ${{ "{:,.2f}".format(balance_neto) }}
-                </p>
-            </div>
-        </div>
+        <!-- VISTA 360° - TARJETAS PRINCIPALES -->
+        <div>
+            <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Visión General 360°</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <!-- Ingresos -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Ingresos</p>
+                    <p class="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">${{ "{:,.2f}".format(total_ingresos) }}</p>
+                </div>
 
-        <!-- Monthly Evolution Chart -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-white">Evolución Mensual (Desde Agosto 2026)</h2>
-                    <p class="text-xs text-slate-400">Comparativa acumulada por mes</p>
+                <!-- Gastos (Clickable) -->
+                <div onclick="toggleBreakdown()" class="bg-slate-900/80 border border-rose-500/30 hover:border-rose-500 rounded-2xl p-4 cursor-pointer transition shadow-lg hover:shadow-rose-500/5 group relative">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[11px] font-semibold text-slate-400 uppercase group-hover:text-rose-400 transition">Gastos (Ver Categorías)</p>
+                        <span class="text-xs text-rose-400 font-bold">🔍</span>
+                    </div>
+                    <p class="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">${{ "{:,.2f}".format(total_gastos) }}</p>
+                </div>
+
+                <!-- Balance Neto -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Balance Neto</p>
+                    <p class="text-lg sm:text-xl font-extrabold {% if balance_neto >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %} mt-1">
+                        ${{ "{:,.2f}".format(balance_neto) }}
+                    </p>
+                </div>
+
+                <!-- Fondo de Emergencia -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Fondo Emergencia</p>
+                    <p class="text-lg sm:text-xl font-extrabold text-amber-400 mt-1">${{ "{:,.2f}".format(emergency_fund) }}</p>
+                </div>
+
+                <!-- Cuentas de Ahorro -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 col-span-2 sm:col-span-1">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Total Ahorros</p>
+                    <p class="text-lg sm:text-xl font-extrabold text-cyan-400 mt-1">${{ "{:,.2f}".format(total_savings) }}</p>
                 </div>
             </div>
-            <div class="h-60 sm:h-64 w-full">
-                <canvas id="monthlyChart"></canvas>
-            </div>
         </div>
 
-        <!-- Transaction Entry Module -->
+        <!-- SECCIÓN DESGLOSE POR CATEGORÍA DE GASTOS (SE MUESTRA/OCULTA O AL HACER CLICK EN GASTOS) -->
+        <div id="categoryBreakdownSection" class="bg-slate-900/90 border border-rose-500/30 rounded-2xl p-5 shadow-2xl transition-all">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <span>📊 Desglose de Gastos por Categoría</span>
+                        <span class="text-xs font-normal text-slate-400">({{ active_month }})</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Haz clic en la tarjeta de Gastos para mostrar/ocultar esta sección</p>
+                </div>
+                <button onclick="toggleBreakdown()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Ocultar ✕</button>
+            </div>
+
+            {% if category_breakdown %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {% for item in category_breakdown %}
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="font-bold text-sm text-slate-200">{{ item.category }}</span>
+                            <span class="font-extrabold text-sm text-rose-400">${{ "{:,.2f}".format(item.amount) }} <span class="text-[10px] text-slate-500 font-normal">({{ item.pct_of_total }}%)</span></span>
+                        </div>
+                        
+                        {% if item.limit > 0 %}
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                                <div class="h-full {% if item.over_limit %}bg-rose-500{% else %}bg-amber-400{% endif %}" style="width: {{ [item.pct_of_limit, 100]|min }}%"></div>
+                            </div>
+                            <div class="flex justify-between text-[11px] mt-1 text-slate-400">
+                                <span>Límite: ${{ "{:,.2f}".format(item.limit) }}</span>
+                                <span class="{% if item.over_limit %}text-rose-400 font-bold{% endif %}">{{ item.pct_of_limit }}% usado</span>
+                            </div>
+                        {% else %}
+                            <p class="text-[10px] text-slate-500 text-right mt-1">Sin límite configurado en Settings</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-500 text-center py-4">No hay gastos registrados en este mes.</p>
+            {% endif %}
+        </div>
+
+        <!-- FORMULARIO REGISTRO CON DROPDOWN DINÁMICO -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
             <h2 class="text-base sm:text-lg font-bold text-white mb-4">Registrar Movimiento</h2>
             
             <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 mb-5">
                 <button type="button" id="btn-gasto" onclick="setTxType('gasto')"
-                    class="py-2 rounded-lg text-sm font-semibold transition-all duration-150 bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    class="py-2 rounded-lg text-sm font-semibold transition-all bg-rose-500/20 text-rose-400 border border-rose-500/30">
                     - Gasto
                 </button>
                 <button type="button" id="btn-ingreso" onclick="setTxType('ingreso')"
-                    class="py-2 rounded-lg text-sm font-semibold transition-all duration-150 text-slate-400 hover:text-white">
-                    + Ingreso (Sueldo / Bono)
+                    class="py-2 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white">
+                    + Ingreso
                 </button>
             </div>
 
-            <form action="/add" method="POST" id="txForm" onsubmit="saveToLocalStorageBeforeSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form action="/add" method="POST" id="txForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input type="hidden" name="type" id="input-type" value="gasto">
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Monto ($)</label>
-                    <input type="number" step="0.01" name="amount" id="input-amount" required placeholder="0.00"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors">
+                    <input type="number" step="0.01" name="amount" required placeholder="0.00"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fecha</label>
-                    <input type="date" name="date" id="input-date" required value="{{ today }}"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                    <input type="date" name="date" required value="{{ today }}"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" id="label-category">Categoría</label>
-                    <input type="text" name="category" id="input-category" required placeholder="Ej. Supermercado, Sueldo Quincenal, Bono..."
-                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Categoría</label>
+                    <select name="category" id="select-category" required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 font-semibold">
+                        <!-- Carga dinámica vía JS -->
+                    </select>
                 </div>
 
                 <div id="vendor-wrapper">
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Vendor / Comercio (Opcional)</label>
-                    <input type="text" name="vendor" id="input-vendor" placeholder="Ej. Costco, Walmart, Restaurante..."
-                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Comercio / Vendor (Opcional)</label>
+                    <input type="text" name="vendor" placeholder="Ej. Costco, Amazon..."
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div class="sm:col-span-2 pt-1">
                     <button type="submit" id="submit-btn"
-                        class="w-full bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold py-3 rounded-xl transition duration-150 shadow-lg shadow-rose-500/10">
+                        class="w-full bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-rose-500/10">
                         Registrar Gasto
                     </button>
                 </div>
             </form>
         </div>
 
-        <!-- History Ledger for Active Month -->
+        <!-- GRÁFICO HISTÓRICO -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-            <h2 class="text-base sm:text-lg font-bold text-white mb-4">Movimientos de {{ active_month }}</h2>
+            <h2 class="text-base font-bold text-white mb-3">Evolución Mensual</h2>
+            <div class="h-60 w-full">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
 
+        <!-- LISTA HISTORIAL DEL MES -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 class="text-base font-bold text-white mb-4">Movimientos de {{ active_month }}</h2>
             {% if transactions %}
                 <div class="space-y-2.5">
                     {% for t in transactions %}
-                    <div class="flex items-center justify-between bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80 hover:border-slate-700 transition duration-150">
+                    <div class="flex items-center justify-between bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
                         <div class="flex items-center space-x-3">
                             <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm
                                 {% if t.type == 'ingreso' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% endif %}">
@@ -160,12 +225,12 @@
                                 <div class="flex items-center space-x-2">
                                     <span class="font-semibold text-sm text-white">{{ t.category }}</span>
                                     {% if t.vendor != '-' %}
-                                    <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
+                                    <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md">
                                         {{ t.vendor }}
                                     </span>
                                     {% endif %}
                                 </div>
-                                <span class="text-xs text-slate-400">{{ t.date }}</span>
+                                <span class="text-xs text-slate-500">{{ t.date }}</span>
                             </div>
                         </div>
 
@@ -175,51 +240,32 @@
                             </span>
                             <form action="/delete/{{ t.id }}" method="POST">
                                 <input type="hidden" name="active_month" value="{{ active_month }}">
-                                <button type="submit" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1 rounded hover:bg-rose-950/40 transition">
-                                    ✕
-                                </button>
+                                <button type="submit" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1">✕</button>
                             </form>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-center py-8 text-slate-500 text-sm">
-                    No hay registros en el mes de {{ active_month }}.
-                </div>
+                <p class="text-center py-6 text-slate-500 text-sm">Sin movimientos registrados en este mes.</p>
             {% endif %}
         </div>
 
     </main>
 
     <script>
-        // Transacciones renderizadas desde el servidor para sincronizar LocalStorage
-        const serverTransactions = {{ transactions | tojson }};
+        const categoriesData = {{ categories | tojson }};
 
-        // Sincronización bidireccional con LocalStorage para garantizar CERO pérdida de datos
-        function syncLocalStorage() {
-            let localData = JSON.parse(localStorage.getItem('gongar_transactions') || '[]');
-            
-            // Combinar registros del servidor y del navegador
-            const combinedMap = new Map();
-            localData.forEach(t => combinedMap.set(t.id, t));
-            serverTransactions.forEach(t => combinedMap.set(t.id, t));
-            
-            const mergedList = Array.from(combinedMap.values());
-            localStorage.setItem('gongar_transactions', JSON.stringify(mergedList));
-
-            // Enviar al servidor si el servidor se reinició / estuvo en frío
-            if (mergedList.length > serverTransactions.length) {
-                fetch('/api/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transactions: mergedList })
-                });
-            }
-        }
-
-        function changeMonth(month) {
-            window.location.href = '/?selected_month=' + month;
+        function populateCategories(type) {
+            const select = document.getElementById('select-category');
+            select.innerHTML = '';
+            const list = categoriesData[type] || [];
+            list.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                select.appendChild(opt);
+            });
         }
 
         function setTxType(type) {
@@ -228,98 +274,55 @@
             const btnIngreso = document.getElementById('btn-ingreso');
             const submitBtn = document.getElementById('submit-btn');
             const vendorWrapper = document.getElementById('vendor-wrapper');
-            const labelCat = document.getElementById('label-category');
 
             inputType.value = type;
+            populateCategories(type);
 
             if (type === 'ingreso') {
-                btnIngreso.className = "py-2 rounded-lg text-sm font-semibold transition-all duration-150 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-                btnGasto.className = "py-2 rounded-lg text-sm font-semibold transition-all duration-150 text-slate-400 hover:text-white";
-                submitBtn.className = "w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition duration-150 shadow-lg shadow-emerald-500/10";
-                submitBtn.innerText = "Registrar Ingreso (Sueldo / Bono)";
+                btnIngreso.className = "py-2 rounded-lg text-sm font-semibold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                btnGasto.className = "py-2 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                submitBtn.className = "w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition";
+                submitBtn.innerText = "Registrar Ingreso";
                 vendorWrapper.style.display = "none";
-                labelCat.innerText = "Categoría / Concepto";
             } else {
-                btnGasto.className = "py-2 rounded-lg text-sm font-semibold transition-all duration-150 bg-rose-500/20 text-rose-400 border border-rose-500/30";
-                btnIngreso.className = "py-2 rounded-lg text-sm font-semibold transition-all duration-150 text-slate-400 hover:text-white";
-                submitBtn.className = "w-full bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold py-3 rounded-xl transition duration-150 shadow-lg shadow-rose-500/10";
+                btnGasto.className = "py-2 rounded-lg text-sm font-semibold transition-all bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                btnIngreso.className = "py-2 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                submitBtn.className = "w-full bg-rose-500 hover:bg-rose-600 text-slate-950 font-bold py-3 rounded-xl transition";
                 submitBtn.innerText = "Registrar Gasto";
                 vendorWrapper.style.display = "block";
-                labelCat.innerText = "Categoría";
             }
         }
 
-        function saveToLocalStorageBeforeSubmit(e) {
-            // Se ejecuta al enviar el formulario para que quede guardado en el navegador de inmediato
-            const type = document.getElementById('input-type').value;
-            const amount = parseFloat(document.getElementById('input-amount').value || 0);
-            const date = document.getElementById('input-date').value;
-            const category = document.getElementById('input-category').value;
-            const vendor = document.getElementById('input-vendor').value || '-';
+        function toggleBreakdown() {
+            const el = document.getElementById('categoryBreakdownSection');
+            el.classList.toggle('hidden');
+        }
 
-            let localData = JSON.parse(localStorage.getItem('gongar_transactions') || '[]');
-            const tempId = Date.now();
-            localData.push({ id: tempId, type, amount, category, vendor, date });
-            localStorage.setItem('gongar_transactions', JSON.stringify(localData));
+        function changeMonth(m) {
+            window.location.href = '/?selected_month=' + m;
         }
 
         async function loadChart() {
             try {
-                const response = await fetch('/api/chart-data');
-                const data = await response.json();
-
+                const res = await fetch('/api/chart-data');
+                const data = await res.json();
                 const ctx = document.getElementById('monthlyChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: data.labels,
                         datasets: [
-                            {
-                                label: 'Ingresos ($)',
-                                data: data.ingresos,
-                                backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                                borderColor: 'rgba(16, 185, 129, 1)',
-                                borderWidth: 1,
-                                borderRadius: 6
-                            },
-                            {
-                                label: 'Gastos ($)',
-                                data: data.gastos,
-                                backgroundColor: 'rgba(244, 63, 94, 0.85)',
-                                borderColor: 'rgba(244, 63, 94, 1)',
-                                borderWidth: 1,
-                                borderRadius: 6
-                            }
+                            { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius: 6 },
+                            { label: 'Gastos', data: data.gastos, backgroundColor: '#f43f5e', borderRadius: 6 }
                         ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 12 } }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                                ticks: { color: '#94a3b8' }
-                            },
-                            y: {
-                                grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                                ticks: { color: '#94a3b8' }
-                            }
-                        }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false }
                 });
-            } catch (err) {
-                console.error("Error cargando el gráfico:", err);
-            }
+            } catch (e) { console.error(e); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            syncLocalStorage();
+            setTxType('gasto');
             loadChart();
         });
     </script>
