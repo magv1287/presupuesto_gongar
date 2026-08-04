@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Presupuesto GonGar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-12">
+
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
+            <h1 class="font-bold text-lg text-white">⚙️ Configuración (Settings)</h1>
+            <a href="/" class="text-xs font-bold px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition">
+                ← Volver al Resumen
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+
+        <!-- SECCIÓN 1: FONDO DE EMERGENCIA Y CUENTAS DE AHORRO -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6">
+            <h2 class="text-base font-bold text-white mb-4">🏦 Fondo de Emergencia y Cuentas de Ahorro</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Fondo de Emergencia -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <h3 class="text-sm font-semibold text-amber-400 mb-2">Fondo de Emergencia</h3>
+                    <form action="/settings/emergency-fund/update" method="POST" class="space-y-3">
+                        <div>
+                            <label class="text-xs text-slate-400">Balance Actual ($)</label>
+                            <input type="number" step="0.01" name="amount" value="{{ emergency_fund }}" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 mt-1">
+                        </div>
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2 rounded-xl transition">
+                            Actualizar Fondo
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Cuentas de Ahorro -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <h3 class="text-sm font-semibold text-cyan-400 mb-2">Añadir Cuenta de Ahorros</h3>
+                    <form action="/settings/savings/add" method="POST" class="space-y-3">
+                        <div>
+                            <input type="text" name="name" placeholder="Nombre (Ej. ETF Joint, Ahorro Viaje)" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-400">
+                        </div>
+                        <div>
+                            <input type="number" step="0.01" name="balance" placeholder="Balance ($)" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-400">
+                        </div>
+                        <button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs py-2 rounded-xl transition">
+                            + Crear Cuenta
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista Cuentas Configuradas -->
+            {% if savings_accounts %}
+            <div class="mt-4 border-t border-slate-800 pt-3">
+                <p class="text-xs font-semibold text-slate-400 mb-2">Cuentas Registradas:</p>
+                <div class="space-y-2">
+                    {% for acc in savings_accounts %}
+                    <div class="flex items-center justify-between bg-slate-950 px-3 py-2 rounded-lg text-xs">
+                        <span class="font-medium text-slate-200">{{ acc.name }}</span>
+                        <div class="flex items-center space-x-3">
+                            <span class="font-bold text-cyan-400">${{ "{:,.2f}".format(acc.balance) }}</span>
+                            <form action="/settings/savings/delete/{{ acc.id }}" method="POST">
+                                <button class="text-rose-400 hover:text-rose-300">✕</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- SECCIÓN 2: CREAR NUEVAS CATEGORÍAS -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6">
+            <h2 class="text-base font-bold text-white mb-4">🏷️ Añadir Nuevas Categorías</h2>
+            
+            <form action="/settings/categories/add" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Tipo</label>
+                    <select name="type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+                        <option value="gasto">Gasto</option>
+                        <option value="ingreso">Ingreso</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Nombre de la Categoría</label>
+                    <input type="text" name="category_name" required placeholder="Ej. Suscripciones, Gimnasio..."
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+                </div>
+                <div class="sm:pt-5">
+                    <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-2.5 rounded-xl transition">
+                        + Añadir Categoría
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- SECCIÓN 3: LÍMITES MENSUALES POR CATEGORÍA -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6">
+            <h2 class="text-base font-bold text-white mb-1">🎯 Límites de Presupuesto por Categoría (Gastos)</h2>
+            <p class="text-xs text-slate-400 mb-4">Establece el límite mensual deseado para cada categoría para el control visual en el resumen.</p>
+
+            <form action="/settings/limits/update" method="POST" class="space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {% for cat in categories.gasto %}
+                    <div class="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-200">{{ cat }}</span>
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-slate-500">$</span>
+                            <input type="number" step="0.01" name="limit_{{ cat }}" value="{{ limits.get(cat, 0.0) }}"
+                                class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-emerald-400 font-bold focus:outline-none">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="pt-3">
+                    <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-3 rounded-xl transition">
+                        💾 Guardar Límites
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+</body>
+</html>
