@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presupuesto Familiar GonGar - Resumen 360°</title>
+    <title>Presupuesto Familiar GonGar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -32,41 +32,31 @@
                 <a href="/settings" class="text-xs font-semibold px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
                     ⚙️ Settings
                 </a>
-                <a href="/api/download-backup" download class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition hidden sm:inline-block">
-                    💾 Backup
-                </a>
             </div>
         </div>
     </header>
 
     <main class="max-w-5xl mx-auto px-4 mt-6 space-y-6">
 
-        <!-- Selector de Mes & Estado -->
+        <!-- Selector de Mes Calendario -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center space-x-2 w-full sm:w-auto">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mes:</span>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mes Calendario:</span>
                 <select id="monthSelect" onchange="changeMonth(this.value)"
                     class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-emerald-400 focus:outline-none">
                     {% for m in available_months %}
                         <option value="{{ m }}" {% if m == active_month %}selected{% endif %}>
-                            {{ m }} {% if m == active_month %}(Actual){% endif %}
+                            {{ m }}
                         </option>
                     {% endfor %}
                 </select>
             </div>
-
-            {% if is_closed %}
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                🔒 Mes Cerrado & Archivado
+            <span class="text-xs text-slate-400 font-mono">
+                Rango: {{ month_start }} ➔ {{ month_end }}
             </span>
-            {% else %}
-            <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                🟢 Mes En Curso
-            </span>
-            {% endif %}
         </div>
 
-        <!-- VISTA 360° - TARJETAS PRINCIPALES -->
+        <!-- 1. VISIÓN GENERAL 360° (ESTÁTICA, SIN CLIC) -->
         <div>
             <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Visión General 360°</h2>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -76,12 +66,9 @@
                     <p class="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">${{ "{:,.2f}".format(total_ingresos) }}</p>
                 </div>
 
-                <!-- Gastos (Clickable) -->
-                <div onclick="toggleBreakdown()" class="bg-slate-900/80 border border-rose-500/30 hover:border-rose-500 rounded-2xl p-4 cursor-pointer transition shadow-lg hover:shadow-rose-500/5 group relative">
-                    <div class="flex items-center justify-between">
-                        <p class="text-[11px] font-semibold text-slate-400 uppercase group-hover:text-rose-400 transition">Gastos (Ver Categorías)</p>
-                        <span class="text-xs text-rose-400 font-bold">🔍</span>
-                    </div>
+                <!-- Gastos -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Gastos</p>
                     <p class="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">${{ "{:,.2f}".format(total_gastos) }}</p>
                 </div>
 
@@ -107,48 +94,85 @@
             </div>
         </div>
 
-        <!-- SECCIÓN DESGLOSE POR CATEGORÍA DE GASTOS (SE MUESTRA/OCULTA O AL HACER CLICK EN GASTOS) -->
-        <div id="categoryBreakdownSection" class="bg-slate-900/90 border border-rose-500/30 rounded-2xl p-5 shadow-2xl transition-all">
-            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
-                <div>
-                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                        <span>📊 Desglose de Gastos por Categoría</span>
-                        <span class="text-xs font-normal text-slate-400">({{ active_month }})</span>
-                    </h3>
-                    <p class="text-xs text-slate-400">Haz clic en la tarjeta de Gastos para mostrar/ocultar esta sección</p>
-                </div>
-                <button onclick="toggleBreakdown()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Ocultar ✕</button>
+        <!-- 2. GRÁFICA DE RELACIÓN DE GASTOS E INGRESOS (UBICADA JUSTO DEBAJO DEL 360) -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base font-bold text-white">Gráfica de Relación: Ingresos vs Gastos</h2>
+                <p class="text-xs text-slate-400">💡 Haz clic en una barra para inspeccionar categorías</p>
             </div>
-
-            {% if category_breakdown %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {% for item in category_breakdown %}
-                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80">
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-bold text-sm text-slate-200">{{ item.category }}</span>
-                            <span class="font-extrabold text-sm text-rose-400">${{ "{:,.2f}".format(item.amount) }} <span class="text-[10px] text-slate-500 font-normal">({{ item.pct_of_total }}%)</span></span>
-                        </div>
-                        
-                        {% if item.limit > 0 %}
-                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
-                                <div class="h-full {% if item.over_limit %}bg-rose-500{% else %}bg-amber-400{% endif %}" style="width: {{ [item.pct_of_limit, 100]|min }}%"></div>
-                            </div>
-                            <div class="flex justify-between text-[11px] mt-1 text-slate-400">
-                                <span>Límite: ${{ "{:,.2f}".format(item.limit) }}</span>
-                                <span class="{% if item.over_limit %}text-rose-400 font-bold{% endif %}">{{ item.pct_of_limit }}% usado</span>
-                            </div>
-                        {% else %}
-                            <p class="text-[10px] text-slate-500 text-right mt-1">Sin límite configurado en Settings</p>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-xs text-slate-500 text-center py-4">No hay gastos registrados en este mes.</p>
-            {% endif %}
+            <div class="h-64 w-full">
+                <canvas id="monthlyChart"></canvas>
+            </div>
         </div>
 
-        <!-- FORMULARIO REGISTRO CON DROPDOWN DINÁMICO -->
+        <!-- 3. DESGLOSE DE CATEGORÍAS (SE MUESTRA DEBAJO AL HACER CLIC EN LA GRÁFICA) -->
+        <div id="breakdownContainer" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-2xl">
+            
+            <!-- Selector de Pestaña de Categórica -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                <div class="flex space-x-2">
+                    <button id="tab-gasto" onclick="showCategoryTab('gasto')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                        Categorías de Gastos
+                    </button>
+                    <button id="tab-ingreso" onclick="showCategoryTab('ingreso')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white border border-transparent">
+                        Categorías de Ingresos
+                    </button>
+                </div>
+                <span class="text-xs text-slate-500 font-mono">{{ active_month }}</span>
+            </div>
+
+            <!-- VISTA CATEGORÍAS DE GASTOS -->
+            <div id="breakdown-gastos">
+                {% if gastos_breakdown %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {% for item in gastos_breakdown %}
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="font-bold text-sm text-slate-200">{{ item.category }}</span>
+                                <span class="font-extrabold text-sm text-rose-400">${{ "{:,.2f}".format(item.amount) }} <span class="text-[10px] text-slate-500 font-normal">({{ item.pct_of_total }}%)</span></span>
+                            </div>
+                            
+                            {% if item.limit > 0 %}
+                                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                                    <div class="h-full {% if item.over_limit %}bg-rose-500{% else %}bg-amber-400{% endif %}" style="width: {{ [item.pct_of_limit, 100]|min }}%"></div>
+                                </div>
+                                <div class="flex justify-between text-[11px] mt-1 text-slate-400">
+                                    <span>Límite: ${{ "{:,.2f}".format(item.limit) }}</span>
+                                    <span class="{% if item.over_limit %}text-rose-400 font-bold{% endif %}">{{ item.pct_of_limit }}% usado</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-500 text-center py-4">Sin gastos registrados en este mes calendario.</p>
+                {% endif %}
+            </div>
+
+            <!-- VISTA CATEGORÍAS DE INGRESOS -->
+            <div id="breakdown-ingresos" class="hidden">
+                {% if ingresos_breakdown %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {% for item in ingresos_breakdown %}
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="font-bold text-sm text-slate-200 block">{{ item.category }}</span>
+                                <span class="text-xs text-slate-500">{{ item.pct_of_total }}% del total de ingresos</span>
+                            </div>
+                            <span class="font-extrabold text-sm text-emerald-400">${{ "{:,.2f}".format(item.amount) }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-500 text-center py-4">Sin ingresos registrados en este mes calendario.</p>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- FORMULARIO REGISTRO -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
             <h2 class="text-base sm:text-lg font-bold text-white mb-4">Registrar Movimiento</h2>
             
@@ -182,7 +206,6 @@
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Categoría</label>
                     <select name="category" id="select-category" required
                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 font-semibold">
-                        <!-- Carga dinámica vía JS -->
                     </select>
                 </div>
 
@@ -199,14 +222,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-
-        <!-- GRÁFICO HISTÓRICO -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-            <h2 class="text-base font-bold text-white mb-3">Evolución Mensual</h2>
-            <div class="h-60 w-full">
-                <canvas id="monthlyChart"></canvas>
-            </div>
         </div>
 
         <!-- LISTA HISTORIAL DEL MES -->
@@ -247,7 +262,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="text-center py-6 text-slate-500 text-sm">Sin movimientos registrados en este mes.</p>
+                <p class="text-center py-6 text-slate-500 text-sm">Sin movimientos registrados en este mes calendario.</p>
             {% endif %}
         </div>
 
@@ -255,6 +270,25 @@
 
     <script>
         const categoriesData = {{ categories | tojson }};
+
+        function showCategoryTab(type) {
+            const btnGasto = document.getElementById('tab-gasto');
+            const btnIngreso = document.getElementById('tab-ingreso');
+            const viewGastos = document.getElementById('breakdown-gastos');
+            const viewIngresos = document.getElementById('breakdown-ingresos');
+
+            if (type === 'ingreso') {
+                btnIngreso.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                btnGasto.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white border border-transparent";
+                viewIngresos.classList.remove('hidden');
+                viewGastos.classList.add('hidden');
+            } else {
+                btnGasto.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                btnIngreso.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white border border-transparent";
+                viewGastos.classList.remove('hidden');
+                viewIngresos.classList.add('hidden');
+            }
+        }
 
         function populateCategories(type) {
             const select = document.getElementById('select-category');
@@ -293,11 +327,6 @@
             }
         }
 
-        function toggleBreakdown() {
-            const el = document.getElementById('categoryBreakdownSection');
-            el.classList.toggle('hidden');
-        }
-
         function changeMonth(m) {
             window.location.href = '/?selected_month=' + m;
         }
@@ -316,7 +345,20 @@
                             { label: 'Gastos', data: data.gastos, backgroundColor: '#f43f5e', borderRadius: 6 }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        onClick: (e, elements) => {
+                            if (elements.length > 0) {
+                                const datasetIndex = elements[0].datasetIndex;
+                                if (datasetIndex === 0) {
+                                    showCategoryTab('ingreso');
+                                } else if (datasetIndex === 1) {
+                                    showCategoryTab('gasto');
+                                }
+                            }
+                        }
+                    }
                 });
             } catch (e) { console.error(e); }
         }
