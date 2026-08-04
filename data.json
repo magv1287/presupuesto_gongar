@@ -1,0 +1,21 @@
+{
+  "transactions": [
+    {
+      "id": 1,
+      "type": "ingreso",
+      "amount": 3200.0,
+      "category": "Sueldo Quincenal",
+      "vendor": "-",
+      "date": "2026-08-01"
+    },
+    {
+      "id": 2,
+      "type": "gasto",
+      "amount": 185.5,
+      "category": "Supermercado",
+      "vendor": "Costco",
+      "date": "2026-08-02"
+    }
+  ],
+  "closed_months": []
+}
