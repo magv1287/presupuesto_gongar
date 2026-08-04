@@ -2,15 +2,19 @@ import os
 import json
 from datetime import datetime
 from collections import defaultdict
-from fastapi import FastAPI, Form, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 app = FastAPI(title="Presupuesto Familiar GonGar")
 templates = Jinja2Templates(directory="templates")
 
-DATA_FILE = "data.json"
-BACKUP_DIR = "backups"
+# En Vercel Serverless, el único directorio con permiso de escritura es /tmp/
+IS_VERCEL = os.environ.get("VERCEL", "0") == "1"
+BASE_DIR = "/tmp" if IS_VERCEL or not os.access(".", os.W_OK) else "."
+
+DATA_FILE = os.path.join(BASE_DIR, "data.json")
+BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
@@ -24,32 +28,35 @@ def load_data():
         return {"transactions": [], "closed_months": []}
 
 def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error guardando en {DATA_FILE}: {e}")
 
 def check_and_close_months(data):
     current_ym = datetime.now().strftime("%Y-%m")
     closed = set(data.get("closed_months", []))
     updated = False
 
-    # Agrupar transacciones por mes
     months_in_data = set(t["date"][:7] for t in data.get("transactions", []) if "date" in t)
 
     for ym in months_in_data:
-        # Si el mes es estrictamente anterior al mes actual del calendario y no ha sido cerrado aún
         if ym < current_ym and ym not in closed:
             month_txs = [t for t in data["transactions"] if t["date"][:7] == ym]
             backup_filename = os.path.join(BACKUP_DIR, f"backup_{ym.replace('-', '_')}.json")
             
-            # Guardar backup del mes cerrado
             backup_payload = {
                 "month": ym,
                 "closed_at": datetime.now().isoformat(),
                 "transactions_count": len(month_txs),
                 "transactions": month_txs
             }
-            with open(backup_filename, "w", encoding="utf-8") as bf:
-                json.dump(backup_payload, bf, indent=2, ensure_ascii=False)
+            try:
+                with open(backup_filename, "w", encoding="utf-8") as bf:
+                    json.dump(backup_payload, bf, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f"Error creando backup en /tmp: {e}")
             
             closed.add(ym)
             updated = True
@@ -68,10 +75,8 @@ async def home(request: Request, selected_month: str = None):
     # Extraer todos los meses disponibles desde Agosto 2026
     available_months = sorted(list(set([t["date"][:7] for t in data.get("transactions", [])] + [current_ym, "2026-08"])), reverse=True)
     
-    # Mes activo
     active_month = selected_month if selected_month in available_months else current_ym
 
-    # Filtrar transacciones por mes activo
     month_txs = [t for t in data.get("transactions", []) if t["date"][:7] == active_month]
     sorted_txs = sorted(month_txs, key=lambda x: x["date"], reverse=True)
 
